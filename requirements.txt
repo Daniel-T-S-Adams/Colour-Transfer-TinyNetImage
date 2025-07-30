@@ -1,0 +1,8 @@
+numpy
+scipy
+Pillow
+imageio
+matplotlib
+POT
+requests
+tqdm 
