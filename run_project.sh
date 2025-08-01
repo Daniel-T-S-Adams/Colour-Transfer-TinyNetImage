@@ -1,5 +1,5 @@
 #!/bin/bash
-
+echo "✅ run_project.sh started!"
 # TinyNetImages Color Transfer Project Runner
 # Usage: ./run_project.sh [source_index] [target_index]
 # Example: ./run_project.sh 1500 5000
@@ -20,7 +20,7 @@ echo "Target image index: $TARGET_IDX"
 # --- Environment Setup ---
 VENV_DIR=".venv"
 SRC_DIR="src"
-PYTHON_EXEC="$VENV_DIR/bin/python3"
+PYTHON_EXEC="$VENV_DIR/Scripts/python.exe"
 
 echo "--- Checking for Virtual Environment ---"
 if [ ! -d "$VENV_DIR" ]; then
@@ -33,7 +33,11 @@ if [ ! -d "$VENV_DIR" ]; then
 fi
 
 echo "✅ Virtual environment found. Activating..."
-source "$VENV_DIR/bin/activate"
+if [ -f "$VENV_DIR/Scripts/activate" ]; then
+    source "$VENV_DIR/Scripts/activate"
+else
+    source "$VENV_DIR/bin/activate"
+fi
 
 # --- Clean up old results (optional but recommended) ---
 echo "--- Cleaning up old results ---"

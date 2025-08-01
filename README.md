@@ -10,20 +10,26 @@ Transfer colors between images using optimal transport and the Sinkhorn algorith
 
 ## Quick Start
 
-### 1. Setup Environment
+### 1. Setup Environment---Using Git bash
 ```bash
 # Clone/download the project
 # Navigate to project directory
 
 # Create virtual environment
-python3 -m venv .venv
-source .venv/bin/activate
+python -m venv .venv
+source .venv/Scripts/activate
+
+#downlard Microsoft Visual C++ 14.0
 
 # Install dependencies
 pip install -r requirements.txt
 
+#download dataset
+python src/data_loader.py
+
+
 # Make scripts executable
-chmod +x run_project.sh browse_images.py
+chmod +x run_project.sh
 ```
 
 ### 2. Choose Images (Optional)
