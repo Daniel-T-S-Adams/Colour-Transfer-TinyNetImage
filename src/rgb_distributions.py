@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import sys
 from data_loader import load_tiny_imagenet_image
+from synthetic_generator import generate_synthetic_image
 
 def load_selected_images(source_idx=97803, target_idx=78):
     """
@@ -40,6 +41,59 @@ def load_selected_images(source_idx=97803, target_idx=78):
     img_tgt = load_tiny_imagenet_image(target_path)
     
     return img_src, img_tgt, source_path, target_path
+
+def load_synthetic_images(source_type="gradient", target_type="radial", seed=42):
+    """
+    Generate synthetic images for color transfer.
+    
+    Args:
+        source_type: Type of synthetic source image
+        target_type: Type of synthetic target image  
+        seed: Random seed for reproducibility
+    
+    Returns:
+        img_src, img_tgt, source_path, target_path
+    """
+    print(f"Generating synthetic source image: {source_type}")
+    print(f"Generating synthetic target image: {target_type}")
+    
+    # Generate synthetic images
+    img_src = generate_synthetic_image(source_type, seed=seed)
+    img_tgt = generate_synthetic_image(target_type, seed=seed+1)  # Different seed for variety
+    
+    # Create descriptive "paths" for synthetic images
+    source_path = f"synthetic_{source_type}_image"
+    target_path = f"synthetic_{target_type}_image"
+    
+    print(f"✅ Generated source image: {source_path}, shape: {img_src.shape}")
+    print(f"✅ Generated target image: {target_path}, shape: {img_tgt.shape}")
+    
+    return img_src, img_tgt, source_path, target_path
+
+def visualize_selected_images(img_src, img_tgt, source_path, target_path, save_path="outputs/selected_images.png"):
+    """
+    Visualize both images side by side and save to disk.
+    Works with both dataset and synthetic images.
+    """
+    fig, axes = plt.subplots(1, 2, figsize=(12, 6))
+    
+    # Display source image
+    axes[0].imshow(img_src, interpolation='bicubic')
+    source_title = f'Source Image\n{os.path.basename(source_path) if "/" in source_path else source_path}'
+    axes[0].set_title(source_title, fontsize=12)
+    axes[0].axis('off')
+    
+    # Display target image  
+    axes[1].imshow(img_tgt, interpolation='bicubic')
+    target_title = f'Target Image\n{os.path.basename(target_path) if "/" in target_path else target_path}'
+    axes[1].set_title(target_title, fontsize=12)
+    axes[1].axis('off')
+    
+    plt.tight_layout()
+    plt.savefig(save_path, dpi=300, bbox_inches='tight')
+    print(f"✅ Visualization saved to: {save_path}")
+    
+    return fig
 
 def build_empirical_rgb_distributions(img_src, img_tgt):
     """
@@ -204,22 +258,67 @@ if __name__ == "__main__":
     # Parse command line arguments
     source_idx = 97803 # Default to 97803 (cliff)
     target_idx = 78   # Default to 78 (goldfish)
+    use_synthetic = False
+    source_type = "gradient"
+    target_type = "radial"
+    seed = 42  # Default seed
     
-    if len(sys.argv) > 1:
-        try:
-            source_idx = int(sys.argv[1])
-        except ValueError:
-            print(f"❌ Error: Source index '{sys.argv[1]}' is not a valid integer.")
-            sys.exit(1)
-    if len(sys.argv) > 2:
-        try:
-            target_idx = int(sys.argv[2])
-        except ValueError:
-            print(f"❌ Error: Target index '{sys.argv[2]}' is not a valid integer.")
-            sys.exit(1)
+    # Parse arguments
+    i = 1
+    while i < len(sys.argv):
+        arg = sys.argv[i]
+        
+        if arg == "synthetic":
+            use_synthetic = True
+            i += 1
+            if i < len(sys.argv) and not sys.argv[i].startswith("--"):
+                source_type = sys.argv[i]
+                i += 1
+            if i < len(sys.argv) and not sys.argv[i].startswith("--"):
+                target_type = sys.argv[i]
+                i += 1
+        elif arg == "--seed":
+            i += 1
+            if i < len(sys.argv):
+                try:
+                    seed = int(sys.argv[i])
+                    i += 1
+                except ValueError:
+                    print(f"❌ Error: Seed '{sys.argv[i]}' is not a valid integer.")
+                    sys.exit(1)
+            else:
+                print("❌ Error: --seed requires a value.")
+                sys.exit(1)
+        elif not arg.startswith("--"):
+            # Handle non-synthetic mode (dataset indices)
+            if not use_synthetic:
+                try:
+                    source_idx = int(arg)
+                    i += 1
+                    if i < len(sys.argv) and not sys.argv[i].startswith("--"):
+                        target_idx = int(sys.argv[i])
+                        i += 1
+                except ValueError:
+                    print(f"❌ Error: Source index '{arg}' is not a valid integer.")
+                    sys.exit(1)
+            else:
+                i += 1
+        else:
+            i += 1
     
-    # Load the selected images
-    img_src, img_tgt, source_path, target_path = load_selected_images(source_idx, target_idx)
+    if use_synthetic:
+        print(f"🎨 Synthetic mode activated: source={source_type}, target={target_type}, seed={seed}")
+    else:
+        print(f"📁 Dataset mode activated: source_idx={source_idx}, target_idx={target_idx}")
+    
+    # Load or generate images
+    if use_synthetic:
+        img_src, img_tgt, source_path, target_path = load_synthetic_images(source_type, target_type, seed)
+    else:
+        img_src, img_tgt, source_path, target_path = load_selected_images(source_idx, target_idx)
+    
+    # Visualize the selected/generated images
+    visualize_selected_images(img_src, img_tgt, source_path, target_path)
     
     # Build empirical RGB distributions
     X_src, w_src, X_tgt, w_tgt = build_empirical_rgb_distributions(img_src, img_tgt)
@@ -239,5 +338,6 @@ if __name__ == "__main__":
     # Save results for next steps
     np.savez('data/rgb_distributions.npz', 
              X_src=X_src, w_src=w_src, X_tgt=X_tgt, w_tgt=w_tgt,
-             source_path=source_path, target_path=target_path)
+             source_path=source_path, target_path=target_path,
+             img_src_original=img_src, img_tgt_original=img_tgt)
     print("✅ Data saved to data/rgb_distributions.npz for next steps")

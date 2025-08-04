@@ -2,6 +2,8 @@
 
 Transfer colors between images using optimal transport and the Sinkhorn algorithm. This project takes two images and transfers the color palette from one to the other while preserving the structure.
 
+**NEW: 🎨 Synthetic Image Generation** - Generate synthetic images with various color distributions instead of using dataset images!
+
 ## What It Does
 
 🎨 **Input**: Two images (source + target)  
@@ -27,27 +29,58 @@ chmod +x run_project.sh browse_images.py
 ```
 
 ### 2. Choose Images (Optional)
+
+**Option A: Browse Dataset Images**
 ```bash
 # Browse random sample images to pick indices
 ./browse_images.py
 ```
 This shows 12 random images with their index numbers. Pick two you like!
 
-### 3. Run Color Transfer
+**Option B: Browse Synthetic Image Types**
 ```bash
-# Option A: Use your chosen images
+# Browse synthetic image options  
+./browse_synthetic.py
+```
+This shows examples of all synthetic image types available.
+
+### 3. Run Color Transfer
+
+**Using Dataset Images:**
+```bash
+# Use your chosen dataset images
 ./run_project.sh [source_index] [target_index]
 
-# Option B: Use defaults (cliff → goldfish)
+# Use defaults (cliff → goldfish)
 ./run_project.sh
 
 # Examples:
 ./run_project.sh 1500 5000    # Transfer colors from image 1500 to image 5000
-./run_project.sh 25432 89123  # Any valid indices work
 ```
+
+**Using Synthetic Images:**
+```bash
+# Use synthetic images
+./run_project.sh synthetic [source_type] [target_type]
+
+# Use synthetic defaults (gradient → radial)
+./run_project.sh synthetic
+
+# Use custom seed for different random images
+./run_project.sh synthetic [source_type] [target_type] --seed [seed]
+
+# Examples:
+./run_project.sh synthetic gradient radial      # Linear gradient to radial gradient
+./run_project.sh synthetic noise spiral         # Noise pattern to spiral pattern
+./run_project.sh synthetic blocks checkerboard  # Color blocks to checkerboard
+./run_project.sh synthetic correlated_blocks gradient --seed 123  # Custom seed
+```
+
+**Available synthetic types:** `gradient`, `radial`, `noise`, `blocks`, `correlated_blocks`, `random_walk`, `spiral`, `checkerboard`
 
 ## Example Workflow
 
+**Using Dataset Images:**
 ```bash
 # 1. Setup (one time only)
 python3 -m venv .venv && source .venv/bin/activate
@@ -63,9 +96,28 @@ chmod +x *.sh *.py
 
 # 4. Check results
 ls outputs/
+```
+
+**Using Synthetic Images:**
+```bash
+# 1. Setup (same as above)
+python3 -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+chmod +x *.sh *.py
+
+# 2. Browse synthetic options (optional)
+./browse_synthetic.py
+# Look at synthetic_options.png, pick two interesting types
+
+# 3. Run color transfer
+./run_project.sh synthetic noise spiral
+
+# 4. Check results - same outputs as dataset mode
+ls outputs/
 # color_transfer_comparison.png  ← Main result (before/after comparison)
 # recolored_source_image.png     ← Final recolored image only
 # rgb_distributions.png          ← Color analysis visualization
+# selected_images.png            ← Source and target images used
 ```
 
 ## Project Structure

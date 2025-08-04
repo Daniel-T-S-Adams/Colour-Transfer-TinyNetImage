@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from data_loader import load_tiny_imagenet_image
 import time
+import os
 
 def load_all_data():
     """Loads all necessary data from previous steps."""
@@ -20,20 +21,29 @@ def load_all_data():
         target_path = str(rgb_data['target_path'])
 
         # Load the original images for visualization
-        img_src_original = load_tiny_imagenet_image(source_path)
-        img_tgt_original = load_tiny_imagenet_image(target_path)
+        # Check if this is synthetic mode (paths start with "synthetic_")
+        if source_path.startswith("synthetic_") or target_path.startswith("synthetic_"):
+            # For synthetic images, load from the saved data
+            img_src_original = rgb_data['img_src_original']
+            img_tgt_original = rgb_data['img_tgt_original']
+            print("✅ Using synthetic images from saved data")
+        else:
+            # For dataset images, load from file paths
+            img_src_original = load_tiny_imagenet_image(source_path)
+            img_tgt_original = load_tiny_imagenet_image(target_path)
+            print("✅ Loaded dataset images from file paths")
 
         print("✅ All data loaded successfully.")
         print(f"   Transport plan `P` shape: {P.shape}")
         print(f"   Source points `X_src` shape: {X_src.shape}")
         print(f"   Target points `X_tgt` shape: {X_tgt.shape}")
         
-        return P, X_src, X_tgt, w_src, img_src_original, img_tgt_original
+        return P, X_src, X_tgt, w_src, img_src_original, img_tgt_original, source_path, target_path
         
     except FileNotFoundError as e:
         print(f"❌ Error: Could not find a required data file: {e.filename}")
         print("Please ensure 'rgb_distributions.py' and 'compute_transport_plan.py' have been run.")
-        return None, None, None, None, None, None
+        return None, None, None, None, None, None, None, None
 
 def apply_barycentric_mapping(P, X_tgt, w_src):
     """
@@ -76,7 +86,7 @@ def apply_barycentric_mapping(P, X_tgt, w_src):
     
     return recolored_X_src_clipped
 
-def reshape_and_save_images(recolored_X_src, img_src_original, img_tgt_original):
+def reshape_and_save_images(recolored_X_src, img_src_original, img_tgt_original, source_path=None, target_path=None):
     """Reshapes the recolored points back to an image and saves all results."""
     print("\n--- Reshaping and Saving Final Images ---")
     
@@ -84,17 +94,28 @@ def reshape_and_save_images(recolored_X_src, img_src_original, img_tgt_original)
     recolored_image = recolored_X_src.reshape(64, 64, 3)
     print(f"✅ Recolored points reshaped to image: {recolored_image.shape}")
     
+    # Get image names for titles
+    if source_path:
+        source_name = os.path.basename(source_path) if "/" in source_path else source_path
+    else:
+        source_name = "Source Image"
+        
+    if target_path:
+        target_name = os.path.basename(target_path) if "/" in target_path else target_path
+    else:
+        target_name = "Target Image"
+    
     # --- Create Comparison Visualization ---
     fig, axes = plt.subplots(1, 3, figsize=(18, 6))
     
     # Original Source
     axes[0].imshow(img_src_original, interpolation='bicubic')
-    axes[0].set_title("Original Source\n(Cliff)")
+    axes[0].set_title(f"Original Source\n({source_name})")
     axes[0].axis('off')
     
     # Original Target
     axes[1].imshow(img_tgt_original, interpolation='bicubic')
-    axes[1].set_title("Original Target\n(Goldfish)")
+    axes[1].set_title(f"Original Target\n({target_name})")
     axes[1].axis('off')
     
     # Recolored Source
@@ -118,13 +139,13 @@ def reshape_and_save_images(recolored_X_src, img_src_original, img_tgt_original)
 
 if __name__ == "__main__":
     # --- Step 1: Load all required data from previous steps ---
-    P, X_src, X_tgt, w_src, img_src_original, img_tgt_original = load_all_data()
+    P, X_src, X_tgt, w_src, img_src_original, img_tgt_original, source_path, target_path = load_all_data()
     
     if P is not None:
         # --- Step 2: Apply the barycentric mapping (Core of Step 6) ---
         recolored_X_src = apply_barycentric_mapping(P, X_tgt, w_src)
         
         # --- Step 3: Reshape, visualize, and save the final results ---
-        reshape_and_save_images(recolored_X_src, img_src_original, img_tgt_original)
+        reshape_and_save_images(recolored_X_src, img_src_original, img_tgt_original, source_path, target_path)
         
         print("\n🎉 Step 6 completed successfully!") 
